@@ -1,0 +1,280 @@
+---
+# Namespace with Ambient Mode enabled (ztunnel only - no waypoints)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cncf-explorer
+  labels:
+    app: cncf-people-explorer
+    istio.io/dataplane-mode: ambient  # Enable Istio Ambient Mode (ztunnel)
+
+---
+# Service Account for Frontend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cncf-frontend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-frontend
+
+---
+# Service Account for Backend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cncf-backend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-backend
+
+---
+# Backend Deployment (No waypoint - ztunnel handles mTLS and L4 routing)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cncf-backend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-backend
+    tier: backend
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cncf-backend
+      tier: backend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: cncf-backend
+        tier: backend
+        version: v1
+      # No waypoint annotation - ztunnel handles all traffic
+    spec:
+      serviceAccountName: cncf-backend
+      containers:
+      - name: backend
+        image: nyanlintun/cncf-people-api:latest
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "3000"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cncf-backend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-backend
+    tier: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: cncf-backend
+    tier: backend
+
+---
+# Frontend Deployment (No waypoint - ztunnel handles mTLS and L4 routing)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cncf-frontend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-frontend
+    tier: frontend
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cncf-frontend
+      tier: frontend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: cncf-frontend
+        tier: frontend
+        version: v1
+      # No waypoint annotation - ztunnel handles all traffic
+    spec:
+      serviceAccountName: cncf-frontend
+      containers:
+      - name: frontend
+        image: nyanlintun/cncf-people-explorer:frontend
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        env:
+        - name: VITE_API_URL
+          value: "http://cncf-backend:3000/api/people"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cncf-frontend
+  namespace: cncf-explorer
+  labels:
+    app: cncf-frontend
+    tier: frontend
+spec:
+  type: LoadBalancer  # Expose to external traffic
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: cncf-frontend
+    tier: frontend
+
+---
+# HorizontalPodAutoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cncf-frontend-hpa
+  namespace: cncf-explorer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cncf-frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# HorizontalPodAutoscaler for Backend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cncf-backend-hpa
+  namespace: cncf-explorer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cncf-backend
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# PeerAuthentication - Enforce mTLS (Automatic with ztunnel)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: cncf-explorer
+spec:
+  mtls:
+    mode: STRICT  # Enforce mTLS for all traffic in the namespace
+
+---
+# AuthorizationPolicy - Allow frontend to access backend
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-allow-frontend
+  namespace: cncf-explorer
+spec:
+  selector:
+    matchLabels:
+      app: cncf-backend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/cncf-explorer/sa/cncf-frontend"
