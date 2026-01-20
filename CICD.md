@@ -57,7 +57,7 @@ nyanlintun/cncf-people-explorer:standalone
 nyanlintun/cncf-people-explorer:standalone-v1.0.0
 ```
 
-**Purpose:** Production-ready, fetches data from CNCF API directly
+**Purpose:** Production-ready, fetches data from CNCF API directly (same behavior as GitHub Pages)
 
 **Data Source:** `https://raw.githubusercontent.com/cncf/people/refs/heads/main/people.json`
 
@@ -70,37 +70,10 @@ docker run -p 8080:80 nyanlintun/cncf-people-explorer:standalone
 **Use Cases:**
 - Quick demos without backend
 - Testing with real CNCF data
-- Standalone deployments
+- Standalone deployments (no backend required)
 
 
-#### Variant 2: `local`
-```
-nyanlintun/cncf-people-explorer:local
-nyanlintun/cncf-people-explorer:local-v1.0.0
-```
-
-**Purpose:** Local development/testing with cached data
-
-**Data Source:** Data file included in container at `/usr/share/nginx/html/data/people.json`
-
-**Usage:**
-```bash
-# Run with built-in data
-docker run -p 8080:80 nyanlintun/cncf-people-explorer:local
-
-# Or mount your own data
-docker run -p 8080:80 \
-  -v $(pwd)/custom-data.json:/usr/share/nginx/html/data/people.json:ro \
-  nyanlintun/cncf-people-explorer:local
-```
-
-**Use Cases:**
-- Offline development
-- Testing with custom datasets
-- Air-gapped environments
-
-
-#### Variant 3: `frontend`
+#### Variant 2: `frontend`
 ```
 nyanlintun/cncf-people-explorer:frontend
 nyanlintun/cncf-people-explorer:frontend-v1.0.0
@@ -109,6 +82,8 @@ nyanlintun/cncf-people-explorer:frontend-v1.0.0
 **Purpose:** Frontend that connects to custom backend API
 
 **Data Source:** Configurable backend API URL via environment variable
+
+**Backend API:** https://github.com/nyan-lin-tun/CNCF-people-api
 
 **Usage:**
 ```bash
@@ -135,12 +110,12 @@ services:
 ```
 
 **Use Cases:**
-- Full-stack deployment
-- Custom backend integration
+- Full-stack deployment with custom backend
 - Production with your own API
+- Connecting to https://github.com/nyan-lin-tun/CNCF-people-api
 
 
-#### Variant 4: `example`
+#### Variant 3: `example`
 ```
 nyanlintun/cncf-people-explorer:example
 nyanlintun/cncf-people-explorer:example-v1.0.0
@@ -181,9 +156,8 @@ Tag pushed (v1.0.0)
     ↓
 GitHub Actions triggers
     ↓
-Build 4 variants in parallel:
+Build 3 variants in parallel:
     ├── standalone (build-arg: MODE=standalone)
-    ├── local (build-arg: MODE=local)
     ├── frontend (build-arg: MODE=frontend)
     └── example (build-arg: MODE=example)
     ↓
@@ -193,13 +167,13 @@ Tag images with:
     ↓
 Push to Docker Hub: nyanlintun/cncf-people-explorer
     ↓
-✅ All 4 variants available
+✅ All 3 variants available
 ```
 
 ### Build Time Estimate
-- Total: ~3-4 minutes for all 4 variants (parallel)
+- Total: ~2-3 minutes for all 3 variants (parallel)
 - Per variant: ~45-60 seconds
-- Runs only on tags (not every push)
+- Runs only on tags (not every push to main)
 
 ---
 
@@ -235,12 +209,12 @@ Stage 2: Production (nginx:alpine)
 
 **Per deployment:**
 - GitHub Pages: ~0.3 minutes (every push to main)
-- Docker builds: ~4 minutes (only on tags)
+- Docker builds: ~3 minutes (only on tags)
 
 **Monthly estimate:**
 - 50 pushes to main: ~15 minutes
-- 4 releases/month: ~16 minutes
-- **Total:** ~31 minutes/month (~1.5% of free tier)
+- 4 releases/month: ~12 minutes
+- **Total:** ~27 minutes/month (~1.4% of free tier)
 
 ---
 
@@ -263,15 +237,14 @@ Configure in: `Settings → Secrets and variables → Actions`
 
 #### For `frontend` variant:
 - `VITE_API_URL` - Your backend API endpoint (required)
-
-#### For `local` variant:
-- No environment variables needed (data included)
+- Example: `VITE_API_URL=https://your-backend.com/api/people`
+- For local backend: `VITE_API_URL=http://host.docker.internal:3000/api/people`
 
 #### For `standalone` variant:
-- No environment variables needed (uses CNCF API)
+- No environment variables needed (uses CNCF API directly)
 
 #### For `example` variant:
-- No environment variables needed (hardcoded data)
+- No environment variables needed (uses bundled sample data)
 
 ---
 
@@ -328,9 +301,6 @@ docker run -p 8080:80 nyanlintun/cncf-people-explorer:standalone-v1.0.0
 # Build standalone variant
 docker build --build-arg MODE=standalone -t cncf-explorer:standalone .
 
-# Build local variant
-docker build --build-arg MODE=local -t cncf-explorer:local .
-
 # Build frontend variant
 docker build --build-arg MODE=frontend -t cncf-explorer:frontend .
 
@@ -339,6 +309,9 @@ docker build --build-arg MODE=example -t cncf-explorer:example .
 
 # Run any variant
 docker run -p 8080:80 cncf-explorer:standalone
+
+# Run frontend with backend URL
+docker run -p 8080:80 -e VITE_API_URL=http://your-backend/api/people cncf-explorer:frontend
 ```
 
 ### Test with Docker Compose
@@ -347,10 +320,7 @@ docker run -p 8080:80 cncf-explorer:standalone
 # Standalone
 docker-compose -f docker-compose.standalone.yml up
 
-# Local
-docker-compose -f docker-compose.local.yml up
-
-# Frontend (with mock backend)
+# Frontend (update VITE_API_URL in the file first)
 docker-compose -f docker-compose.frontend.yml up
 
 # Example

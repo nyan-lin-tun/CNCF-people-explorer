@@ -1,0 +1,77 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+env:
+  DOCKER_HUB_USERNAME: nyanlintun
+  IMAGE_NAME: nyanlintun/cncf-people-explorer
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: [standalone, frontend, example]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Version: $VERSION"
+          else
+            echo "version=latest" >> $GITHUB_OUTPUT
+            echo "Version: latest (manual trigger)"
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            MODE=${{ matrix.variant }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ matrix.variant }}
+            ${{ env.IMAGE_NAME }}:${{ matrix.variant }}-${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: echo "Image pushed successfully with tags ${{ matrix.variant }} and ${{ matrix.variant }}-${{ steps.version.outputs.version }}"
+
+  summary:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build summary
+        run: |
+          echo "✅ All Docker images built and pushed successfully!"
+          echo ""
+          echo "📦 Images available at:"
+          echo "  - nyanlintun/cncf-people-explorer:standalone"
+          echo "  - nyanlintun/cncf-people-explorer:frontend"
+          echo "  - nyanlintun/cncf-people-explorer:example"
+          echo ""
+          echo "🏷️  Tagged with version: ${{ github.ref_name }}"
+          echo ""
+          echo "🔗 Docker Hub: https://hub.docker.com/r/nyanlintun/cncf-people-explorer"

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODE: frontend
+    image: nyanlintun/cncf-people-explorer:frontend
+    container_name: cncf-explorer-frontend
+    ports:
+      - "8080:80"
+    environment:
+      # Set your backend API URL here
+      - VITE_API_URL=https://your-backend-api.com/api/people
+      # For local development with backend on host machine:
+      # - VITE_API_URL=http://host.docker.internal:3000/api/people
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+# Usage:
+# 1. Update VITE_API_URL to point to your backend
+# 2. docker-compose -f docker-compose.frontend.yml up
+# 3. Visit: http://localhost:8080
+#
+# For production with actual backend:
+# docker-compose -f docker-compose.frontend.yml up -d

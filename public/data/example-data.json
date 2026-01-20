@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Jane Developer",
+    "company": "Cloud Native Inc",
+    "location": "San Francisco, USA",
+    "bio": "Cloud architect and Kubernetes enthusiast. Contributing to CNCF projects and building scalable distributed systems.",
+    "category": ["Kubestronaut", "Ambassador"],
+    "linkedin": "https://linkedin.com/in/example",
+    "twitter": "@janedev",
+    "github": "janedev"
+  },
+  {
+    "name": "John DevOps",
+    "company": "Container Corp",
+    "location": "London, UK",
+    "bio": "DevOps engineer passionate about cloud native technologies and open source.",
+    "category": ["Ambassador"],
+    "linkedin": "https://linkedin.com/in/example2",
+    "github": "johndevops"
+  },
+  {
+    "name": "Maria Cloud",
+    "company": "Tech Innovations",
+    "location": "Berlin, Germany",
+    "bio": "Software engineer specializing in microservices architecture and service mesh.",
+    "category": ["Contributor"],
+    "linkedin": "https://linkedin.com/in/example3",
+    "twitter": "@mariacloud"
+  },
+  {
+    "name": "Alex Platform",
+    "company": "Startup Labs",
+    "location": "Toronto, Canada",
+    "bio": "Platform engineer building cloud native infrastructure and contributing to CNCF ecosystem.",
+    "category": ["Ambassador", "Contributor"],
+    "github": "alexplatform"
+  },
+  {
+    "name": "Sarah Containers",
+    "company": "Open Source Foundation",
+    "location": "Sydney, Australia",
+    "bio": "Container security specialist and open source advocate.",
+    "category": ["Kubestronaut"],
+    "linkedin": "https://linkedin.com/in/example5",
+    "github": "sarahcontainers"
+  }
+]

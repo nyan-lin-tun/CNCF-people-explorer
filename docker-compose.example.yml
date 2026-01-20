@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  example:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODE: example
+    image: nyanlintun/cncf-people-explorer:example
+    container_name: cncf-explorer-example
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+# Usage:
+# docker-compose -f docker-compose.example.yml up
+# Visit: http://localhost:8080
+# This variant includes sample data for quick demos
