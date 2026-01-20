@@ -18,7 +18,20 @@ export function usePeople() {
       }
 
       const data = await response.json()
-      people.value = data
+
+      // Deduplicate data based on unique combination of name, company, and location
+      const uniquePeople = []
+      const seen = new Set()
+
+      data.forEach(person => {
+        const key = `${person.name || ''}-${person.company || ''}-${person.location || ''}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          uniquePeople.push(person)
+        }
+      })
+
+      people.value = uniquePeople
     } catch (err) {
       error.value = err.message || 'An error occurred while fetching data'
       console.error('Error fetching CNCF people:', err)

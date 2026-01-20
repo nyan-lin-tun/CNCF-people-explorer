@@ -8,8 +8,8 @@
 
     <div v-else class="person-grid">
       <PersonCard
-        v-for="person in people"
-        :key="person.name + (person.company || '')"
+        v-for="(person, index) in people"
+        :key="`${person.name}-${person.company || 'none'}-${person.location || 'none'}-${person.linkedin || index}`"
         :person="person"
       />
     </div>
