@@ -22,14 +22,29 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref, watch } from 'vue'
+import { trackSearch } from '../utils/analytics'
+
+const props = defineProps({
   modelValue: {
     type: String,
     default: ''
   }
 })
 
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
+
+// Debounced search tracking
+let searchTimeout = null
+watch(() => props.modelValue, (newValue) => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+
+  if (newValue && newValue.trim()) {
+    searchTimeout = setTimeout(() => {
+      trackSearch(newValue)
+    }, 1000) // Track after user stops typing for 1 second
+  }
+})
 </script>
 
 <style scoped>

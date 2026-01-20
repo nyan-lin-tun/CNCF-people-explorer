@@ -5,7 +5,7 @@
       <select
         id="company-filter"
         :value="selectedCompany"
-        @change="$emit('update:selectedCompany', $event.target.value)"
+        @change="handleCompanyChange"
         class="filter-select"
       >
         <option value="">All Companies</option>
@@ -24,7 +24,7 @@
       <select
         id="location-filter"
         :value="selectedLocation"
-        @change="$emit('update:selectedLocation', $event.target.value)"
+        @change="handleLocationChange"
         class="filter-select"
       >
         <option value="">All Locations</option>
@@ -49,6 +49,8 @@
 </template>
 
 <script setup>
+import { trackFilter } from '../utils/analytics'
+
 defineProps({
   companies: {
     type: Array,
@@ -69,6 +71,22 @@ defineProps({
 })
 
 const emit = defineEmits(['update:selectedCompany', 'update:selectedLocation'])
+
+const handleCompanyChange = (event) => {
+  const value = event.target.value
+  emit('update:selectedCompany', value)
+  if (value) {
+    trackFilter('company', value)
+  }
+}
+
+const handleLocationChange = (event) => {
+  const value = event.target.value
+  emit('update:selectedLocation', value)
+  if (value) {
+    trackFilter('location', value)
+  }
+}
 
 const clearFilters = () => {
   emit('update:selectedCompany', '')
