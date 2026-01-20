@@ -1,14 +1,20 @@
-# CNCF-people-explorer
-A Vue.js frontend that fetches the CNCF people.json dataset and provides a fast, searchable directory of community members.
-
 # CNCF People Explorer
 
 A Vue.js frontend that fetches the official CNCF `people.json` dataset and provides a fast, searchable directory of community members.
 
+## 🌟 Live Demo
+
+Visit the live application at: **https://nyan-lin-tun.github.io/CNCF-people-explorer/**
+
 ## ✨ Features
-- Browse the CNCF community directory
-- Instant search by name, company, or location
-- Clean and responsive UI
+- Browse the complete CNCF community directory
+- Real-time search across name, company, location, bio, and categories
+- Filter by company and location
+- Responsive card-based grid layout
+- Mobile-first design (optimized for all devices)
+- Social media links (LinkedIn, Twitter, GitHub, WeChat)
+- Category badges for expertise areas
+- Loading and error states
 - Frontend-only (no backend required)
 
 ## 📦 Data Source
