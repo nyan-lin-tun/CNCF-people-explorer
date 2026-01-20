@@ -1,0 +1,82 @@
+---
+# Waypoint Gateway for Frontend (L7 traffic management)
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: waypoint-frontend
+  namespace: cncf-explorer
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE
+
+---
+# Waypoint Gateway for Backend (L7 traffic management)
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: waypoint-backend
+  namespace: cncf-explorer
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE
+
+---
+# Istio Ingress Gateway (for external traffic)
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: cncf-explorer-gateway
+  namespace: cncf-explorer
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    hostname: "*.example.com"  # Change to your domain
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+  # Uncomment for HTTPS
+  # - name: https
+  #   hostname: "*.example.com"
+  #   port: 443
+  #   protocol: HTTPS
+  #   tls:
+  #     mode: Terminate
+  #     certificateRefs:
+  #     - name: cncf-explorer-tls
+  #   allowedRoutes:
+  #     namespaces:
+  #       from: Same
+
+---
+# HTTPRoute for external access to frontend
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: cncf-frontend-route
+  namespace: cncf-explorer
+spec:
+  parentRefs:
+  - name: cncf-explorer-gateway
+  hostnames:
+  - "cncf-explorer.example.com"  # Change to your domain
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: cncf-frontend
+      port: 80

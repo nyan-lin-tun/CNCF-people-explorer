@@ -1,0 +1,208 @@
+---
+# DestinationRule for Frontend
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: cncf-frontend
+  namespace: cncf-explorer
+spec:
+  host: cncf-frontend
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+        idleTimeout: 300s
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+
+---
+# DestinationRule for Backend with Circuit Breaker
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: cncf-backend
+  namespace: cncf-explorer
+spec:
+  host: cncf-backend
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+
+---
+# VirtualService for Frontend
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cncf-frontend
+  namespace: cncf-explorer
+spec:
+  hosts:
+  - cncf-frontend
+  http:
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: cncf-frontend
+        subset: v1
+        port:
+          number: 80
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+
+---
+# VirtualService for Backend with Retry and Timeout
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cncf-backend
+  namespace: cncf-explorer
+spec:
+  hosts:
+  - cncf-backend
+  http:
+  - match:
+    - uri:
+        prefix: "/api"
+    route:
+    - destination:
+        host: cncf-backend
+        subset: v1
+        port:
+          number: 3000
+    timeout: 10s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+    corsPolicy:
+      allowOrigins:
+      - exact: "*"
+      allowMethods:
+      - GET
+      - POST
+      - OPTIONS
+      allowHeaders:
+      - Content-Type
+      - Authorization
+      maxAge: "24h"
+
+---
+# PeerAuthentication - Enforce mTLS (Strict mode)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: cncf-explorer
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# AuthorizationPolicy - Allow frontend to access backend
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-allow-frontend
+  namespace: cncf-explorer
+spec:
+  selector:
+    matchLabels:
+      app: cncf-backend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/cncf-explorer/sa/cncf-frontend"
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/*"]
+
+---
+# AuthorizationPolicy - Allow ingress to frontend
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: frontend-allow-ingress
+  namespace: cncf-explorer
+spec:
+  selector:
+    matchLabels:
+      app: cncf-frontend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["istio-system"]  # Allow from Istio ingress gateway
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/*"]
+
+---
+# Telemetry - Enable metrics and tracing
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: cncf-explorer
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  tracing:
+  - providers:
+    - name: zipkin
+    randomSamplingPercentage: 100.0
+  accessLogging:
+  - providers:
+    - name: envoy
+
+---
+# RequestAuthentication - JWT validation (Optional)
+# Uncomment if you want to enable JWT authentication
+# apiVersion: security.istio.io/v1beta1
+# kind: RequestAuthentication
+# metadata:
+#   name: jwt-auth
+#   namespace: cncf-explorer
+# spec:
+#   selector:
+#     matchLabels:
+#       app: cncf-frontend
+#   jwtRules:
+#   - issuer: "https://your-auth-provider.com"
+#     jwksUri: "https://your-auth-provider.com/.well-known/jwks.json"
+#     audiences:
+#     - "cncf-explorer"

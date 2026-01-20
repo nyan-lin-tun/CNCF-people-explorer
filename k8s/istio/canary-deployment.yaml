@@ -1,0 +1,211 @@
+---
+# Canary Deployment Example - Frontend v2
+# This shows how to use waypoint proxies for canary deployments
+# Deploy v2 alongside v1, then gradually shift traffic
+
+# Frontend v2 Deployment (Canary)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cncf-frontend-v2
+  namespace: cncf-explorer
+  labels:
+    app: cncf-frontend
+    tier: frontend
+    version: v2
+spec:
+  replicas: 1  # Start with fewer replicas
+  selector:
+    matchLabels:
+      app: cncf-frontend
+      tier: frontend
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: cncf-frontend
+        tier: frontend
+        version: v2
+      annotations:
+        istio.io/use-waypoint: waypoint-frontend
+    spec:
+      serviceAccountName: cncf-frontend
+      containers:
+      - name: frontend
+        image: nyanlintun/cncf-people-explorer:frontend-v0.2.0  # New version
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        env:
+        - name: VITE_API_URL
+          value: "http://cncf-backend:3000/api/people"
+        - name: VERSION
+          value: "v2"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+
+---
+# DestinationRule with v1 and v2 subsets
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: cncf-frontend-canary
+  namespace: cncf-explorer
+spec:
+  host: cncf-frontend
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+
+---
+# VirtualService - 90% v1, 10% v2 (Canary)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cncf-frontend-canary
+  namespace: cncf-explorer
+spec:
+  hosts:
+  - cncf-frontend
+  http:
+  # Route for internal testing - always go to v2
+  - match:
+    - headers:
+        x-canary-testing:
+          exact: "true"
+    route:
+    - destination:
+        host: cncf-frontend
+        subset: v2
+        port:
+          number: 80
+  # Route for Chrome users - 20% to v2
+  - match:
+    - headers:
+        user-agent:
+          regex: ".*Chrome.*"
+    route:
+    - destination:
+        host: cncf-frontend
+        subset: v2
+        port:
+          number: 80
+      weight: 20
+    - destination:
+        host: cncf-frontend
+        subset: v1
+        port:
+          number: 80
+      weight: 80
+  # Default route - 10% to v2
+  - route:
+    - destination:
+        host: cncf-frontend
+        subset: v2
+        port:
+          number: 80
+      weight: 10
+    - destination:
+        host: cncf-frontend
+        subset: v1
+        port:
+          number: 80
+      weight: 90
+
+---
+# Gradual Rollout Stages
+# Apply these incrementally to increase canary traffic
+
+# Stage 1: 10% canary (already applied above)
+# Stage 2: 25% canary
+# apiVersion: networking.istio.io/v1beta1
+# kind: VirtualService
+# metadata:
+#   name: cncf-frontend-canary
+#   namespace: cncf-explorer
+# spec:
+#   hosts:
+#   - cncf-frontend
+#   http:
+#   - route:
+#     - destination:
+#         host: cncf-frontend
+#         subset: v2
+#       weight: 25
+#     - destination:
+#         host: cncf-frontend
+#         subset: v1
+#       weight: 75
+
+# Stage 3: 50% canary
+# spec:
+#   hosts:
+#   - cncf-frontend
+#   http:
+#   - route:
+#     - destination:
+#         host: cncf-frontend
+#         subset: v2
+#       weight: 50
+#     - destination:
+#         host: cncf-frontend
+#         subset: v1
+#       weight: 50
+
+# Stage 4: 75% canary
+# spec:
+#   hosts:
+#   - cncf-frontend
+#   http:
+#   - route:
+#     - destination:
+#         host: cncf-frontend
+#         subset: v2
+#       weight: 75
+#     - destination:
+#         host: cncf-frontend
+#         subset: v1
+#       weight: 25
+
+# Stage 5: 100% v2 (complete migration)
+# spec:
+#   hosts:
+#   - cncf-frontend
+#   http:
+#   - route:
+#     - destination:
+#         host: cncf-frontend
+#         subset: v2
+#       weight: 100
+
+---
+# Monitoring - ServiceMonitor for Prometheus
+apiVersion: v1
+kind: Service
+metadata:
+  name: cncf-frontend-v2-metrics
+  namespace: cncf-explorer
+  labels:
+    app: cncf-frontend
+    version: v2
+spec:
+  ports:
+  - name: metrics
+    port: 15020
+    targetPort: 15020
+  selector:
+    app: cncf-frontend
+    version: v2
