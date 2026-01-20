@@ -74,6 +74,7 @@ watch(() => props.modelValue, (newValue) => {
   border: 2px solid var(--color-border);
   border-radius: var(--border-radius);
   background-color: var(--color-background);
+  color: var(--color-text-primary);
   transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
