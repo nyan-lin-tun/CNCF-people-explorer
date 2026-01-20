@@ -104,4 +104,15 @@ watch(() => props.modelValue, (newValue) => {
 .clear-button:hover {
   background-color: var(--color-hover);
 }
+
+@media (max-width: 768px) {
+  .search-input-wrapper {
+    max-width: 100%;
+  }
+
+  .search-input {
+    padding: 0.875rem 2.5rem;
+    font-size: 0.95rem;
+  }
+}
 </style>

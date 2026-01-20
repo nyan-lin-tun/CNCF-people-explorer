@@ -11,6 +11,7 @@
         v-for="(person, index) in people"
         :key="`${person.name}-${person.company || 'none'}-${person.location || 'none'}-${person.linkedin || index}`"
         :person="person"
+        @click="handlePersonClick"
       />
     </div>
   </div>
@@ -26,6 +27,12 @@ defineProps({
     default: () => []
   }
 })
+
+const emit = defineEmits(['personClick'])
+
+const handlePersonClick = (person) => {
+  emit('personClick', person)
+}
 </script>
 
 <style scoped>

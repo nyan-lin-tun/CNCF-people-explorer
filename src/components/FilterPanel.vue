@@ -158,10 +158,17 @@ const clearFilters = () => {
 @media (max-width: 768px) {
   .filter-panel {
     flex-direction: column;
+    padding: 1rem;
   }
 
   .filter-group {
     min-width: 100%;
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+    font-size: 0.95rem;
   }
 
   .clear-filters-button {

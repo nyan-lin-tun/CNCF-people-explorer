@@ -1,5 +1,5 @@
 <template>
-  <div class="person-card">
+  <div class="person-card" @click="handleClick" role="button" tabindex="0" @keypress.enter="handleClick">
     <div class="card-header">
       <img
         :src="imageUrl"
@@ -81,6 +81,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['click'])
+
 const imageFailed = ref(false)
 
 const imageUrl = computed(() => {
@@ -125,6 +127,10 @@ const getGitHubUrl = (github) => {
   if (github.startsWith('http')) return github
   return `https://github.com/${github}`
 }
+
+const handleClick = () => {
+  emit('click', props.person)
+}
 </script>
 
 <style scoped>
@@ -138,6 +144,7 @@ const getGitHubUrl = (github) => {
   flex-direction: column;
   gap: 1rem;
   height: 100%;
+  cursor: pointer;
 }
 
 .person-card:hover {

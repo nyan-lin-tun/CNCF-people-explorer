@@ -20,6 +20,25 @@
   --transition-speed: 0.2s;
 }
 
+/* Dark Mode Variables */
+:root.dark {
+  --color-primary: #5a8dff;
+  --color-primary-dark: #436cf4;
+  --color-secondary: #00d4c4;
+  --color-background: #1a1a1a;
+  --color-surface: #2d2d2d;
+  --color-border: #404040;
+  --color-text-primary: #e8e8e8;
+  --color-text-secondary: #a0a0a0;
+  --color-error: #ff6b6b;
+  --color-success: #51cf66;
+  --color-hover: #3a3a3a;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
 /* CSS Reset */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -35,10 +54,13 @@ body {
   background-color: var(--color-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 #app {
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Typography */
