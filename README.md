@@ -114,6 +114,32 @@ kubectl get svc -n cncf-explorer
 
 See [k8s/README.md](./k8s/README.md) for complete Kubernetes documentation.
 
+### Istio Ambient Mode (with Waypoint Proxies)
+
+Deploy with Istio ambient mode for advanced traffic management:
+
+```bash
+# Install Istio ambient mode
+./k8s/istio/install-istio-ambient.sh
+
+# Deploy with ambient mode
+kubectl apply -f https://raw.githubusercontent.com/nyan-lin-tun/CNCF-people-explorer/main/k8s/istio/ambient-deployment.yaml
+
+# Deploy waypoint proxies (L7 features)
+kubectl apply -f https://raw.githubusercontent.com/nyan-lin-tun/CNCF-people-explorer/main/k8s/istio/waypoint-gateway.yaml
+
+# Apply traffic management
+kubectl apply -f https://raw.githubusercontent.com/nyan-lin-tun/CNCF-people-explorer/main/k8s/istio/traffic-management.yaml
+```
+
+**Benefits:**
+- ⚡ No sidecar containers (lower resource usage)
+- 🔒 Automatic mTLS encryption
+- 🎯 Advanced traffic routing (canary, A/B testing)
+- 📊 Built-in observability with Kiali, Prometheus, Grafana
+
+See [k8s/istio/README.md](./k8s/istio/README.md) for Istio documentation.
+
 ## 🛠️ Tech Stack
 - Vue 3
 - Vite
