@@ -7,15 +7,15 @@ A Vue.js frontend that fetches the official CNCF `people.json` dataset and provi
 Visit the live application at: **https://nyan-lin-tun.github.io/CNCF-people-explorer/**
 
 ## ✨ Features
-- Browse the complete CNCF community directory
-- Real-time search across name, company, location, bio, and categories
-- Filter by company and location
-- Responsive card-based grid layout
-- Mobile-first design (optimized for all devices)
-- Social media links (LinkedIn, Twitter, GitHub, WeChat)
-- Category badges for expertise areas
-- Loading and error states
-- Frontend-only (no backend required)
+- 🔍 **Real-time Search** - Search across name, company, location, bio, and categories
+- 🏢 **Smart Filters** - Filter by company and location
+- 🌙 **Dark Mode** - Toggle with localStorage persistence and system preference detection
+- 👤 **Profile Modal** - Click any card to view detailed information
+- ⚡ **Lazy Loading** - Pagination for better performance (24 items per batch)
+- 📱 **Mobile Responsive** - Optimized for all screen sizes
+- 🏷️ **Category Badges** - Kubestronaut, Ambassador, and more
+- 🔗 **Social Links** - LinkedIn, Twitter, GitHub, WeChat
+- 🎨 **Modern UI** - Card-based grid layout with smooth animations
 
 ## 📦 Data Source
 This project uses the public CNCF People API:
@@ -60,6 +60,59 @@ base: "/CNCF-people-explorer/",
 ```
 
 Then enable **GitHub Pages → Source: GitHub Actions** in your repository settings.
+
+## 🐳 Docker Deployment
+
+### Quick Start
+
+```bash
+# Run standalone (uses CNCF API)
+docker run -d -p 8080:80 nyanlintun/cncf-people-explorer:standalone
+
+# Visit: http://localhost:8080
+```
+
+### Available Variants
+
+- **`standalone`** - Uses CNCF API directly (no backend required)
+- **`frontend`** - Connects to custom backend API
+- **`example`** - Includes sample data for quick demos
+
+See [DOCKER.md](./DOCKER.md) for complete documentation.
+
+### Docker Compose
+
+```bash
+# Standalone deployment
+docker-compose -f docker-compose.standalone.yml up
+
+# Frontend with backend
+docker-compose -f docker-compose.frontend.yml up
+```
+
+## ☸️ Kubernetes Deployment
+
+### One-Command Deploy
+
+Deploy complete stack (frontend + backend) to your cluster:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/nyan-lin-tun/CNCF-people-explorer/main/k8s/complete-deployment.yaml
+```
+
+Or deploy standalone (no backend):
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/nyan-lin-tun/CNCF-people-explorer/main/k8s/standalone-deployment.yaml
+```
+
+### Get External IP
+
+```bash
+kubectl get svc -n cncf-explorer
+```
+
+See [k8s/README.md](./k8s/README.md) for complete Kubernetes documentation.
 
 ## 🛠️ Tech Stack
 - Vue 3
